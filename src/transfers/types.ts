@@ -45,4 +45,8 @@ export interface TransferStatus {
   txHash?: string;
   /** Block explorer URL for the transaction (if available) */
   explorerUrl?: string;
+  /** Amount received (human-readable) */
+  amountOut?: string;
+  /** Amount received in USD */
+  amountOutUsd?: string;
 }

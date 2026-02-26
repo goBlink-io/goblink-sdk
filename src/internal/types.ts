@@ -81,6 +81,17 @@ export interface ProtocolQuoteResponse {
 /** Execution status from the upstream API */
 export interface ProtocolExecutionStatus {
   status: string;
-  txHash?: string;
-  details?: string;
+  updatedAt?: string;
+  swapDetails?: {
+    amountIn?: string;
+    amountInFormatted?: string;
+    amountInUsd?: string;
+    amountOut?: string;
+    amountOutFormatted?: string;
+    amountOutUsd?: string;
+    originChainTxHashes?: Array<{ hash: string; explorerUrl?: string }>;
+    destinationChainTxHashes?: Array<{ hash: string; explorerUrl?: string }>;
+    refundedAmount?: string;
+    refundReason?: string | null;
+  };
 }

@@ -49,7 +49,7 @@ export class ApiClient {
   /** Check the execution status of a transfer */
   async getExecutionStatus(depositAddress: string): Promise<ProtocolExecutionStatus> {
     return this.get<ProtocolExecutionStatus>(
-      `/v0/execution-status/${encodeURIComponent(depositAddress)}`,
+      `/v0/status?depositAddress=${encodeURIComponent(depositAddress)}`,
     );
   }
 
