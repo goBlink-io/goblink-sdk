@@ -43,5 +43,20 @@ export type { PaymentLinkOptions, BadgeOptions, ShortenOptions, ShortenResponse 
 // Status polling
 export type { WaitForCompletionOptions } from './transfers/wait.js';
 
+// Price types
+export type { TokenPrice } from './prices/types.js';
+
+// Balance types
+export type { BalanceChainType, BalanceQuery, BalanceResponse, NativeBalance, TokenBalance } from './balances/types.js';
+
+// Deposit types
+export type { SubmitDepositRequest, SubmitDepositResponse } from './deposits/types.js';
+
+// Payment types
+export type { PaymentStatus, CompletePaymentRequest, FinalizePaymentRequest, PaymentActionResponse } from './payments/types.js';
+
+// Transaction history types
+export type { Transaction, TransactionHistoryQuery, CreateTransactionRequest } from './history/types.js';
+
 // Widget (browser environments — import '@goblink/sdk/widget' for full widget API)
 export type { WidgetOptions, WidgetEvent, GoBlinkWidgetProps } from './widget/types.js';

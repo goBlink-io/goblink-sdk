@@ -1,4 +1,5 @@
 import { ApiClient } from './internal/api-client.js';
+import { GoBlinkApi } from './api/goblink-api.js';
 import { AssetMapper } from './internal/asset-mapping.js';
 import { TokenListProvider } from './tokens/list.js';
 import { filterTokens } from './tokens/filter.js';
@@ -13,6 +14,16 @@ import { validateAddress } from './validation/address.js';
 import { getAllChains } from './chains/config.js';
 import { createPaymentLink, createBadge, shortenPaymentLink } from './links/payment-link.js';
 import type { PaymentLinkOptions, BadgeOptions, ShortenOptions, ShortenResponse } from './links/types.js';
+import { getTokenPrices } from './prices/get-prices.js';
+import type { TokenPrice } from './prices/types.js';
+import { getBalances } from './balances/get-balances.js';
+import type { BalanceQuery, BalanceResponse } from './balances/types.js';
+import { submitDeposit } from './deposits/submit.js';
+import type { SubmitDepositResponse } from './deposits/types.js';
+import { getPaymentStatus, completePayment, finalizePayment } from './payments/payment-status.js';
+import type { PaymentStatus, CompletePaymentRequest, FinalizePaymentRequest, PaymentActionResponse } from './payments/types.js';
+import { getTransactionHistory, getTransaction, createTransaction, syncTransaction } from './history/transactions.js';
+import type { Transaction, TransactionHistoryQuery, CreateTransactionRequest } from './history/types.js';
 import type { ChainId, ChainConfig } from './chains/types.js';
 import type { Token, TokenFilterOptions } from './tokens/types.js';
 import type { QuoteRequest, QuoteResponse, FeeInfo } from './quotes/types.js';
@@ -26,8 +37,10 @@ export interface GoBlinkOptions {
   minFee?: number;
   /** Fee recipient account (default: "goblink.near") */
   feeRecipient?: string;
-  /** API base URL (for internal use / testing) */
+  /** Protocol API base URL (for internal use / testing) */
   baseUrl?: string;
+  /** goblink.io API base URL (default: "https://goblink.io") */
+  goBlinkUrl?: string;
   /** Request timeout in milliseconds (default: 30000) */
   timeout?: number;
   /** Token list cache TTL in milliseconds (default: 300000 = 5 min) */
@@ -52,6 +65,7 @@ export interface GoBlinkOptions {
  */
 export class GoBlink {
   private readonly apiClient: ApiClient;
+  private readonly goBlinkApi: GoBlinkApi;
   private readonly mapper: AssetMapper;
   private readonly tokenList: TokenListProvider;
   private readonly feeTiers: FeeTier[];
@@ -61,6 +75,10 @@ export class GoBlink {
   constructor(options: GoBlinkOptions = {}) {
     this.apiClient = new ApiClient({
       baseUrl: options.baseUrl,
+      timeout: options.timeout,
+    });
+    this.goBlinkApi = new GoBlinkApi({
+      baseUrl: options.goBlinkUrl,
       timeout: options.timeout,
     });
     this.mapper = new AssetMapper();
@@ -255,5 +273,162 @@ export class GoBlink {
       (addr) => this.getTransferStatus(addr),
       options,
     );
+  }
+
+  // ── goblink.io API methods ──────────────────────────────────────────────
+
+  /**
+   * Notify goblink.io that a deposit transaction has been sent on-chain.
+   * Speeds up transfer tracking instead of waiting for automatic detection.
+   *
+   * @param txHash - On-chain transaction hash of the deposit
+   * @param depositAddress - Deposit address returned from createTransfer
+   * @returns Confirmation response
+   *
+   * @example
+   * ```typescript
+   * await gb.submitDeposit(
+   *   '0xabc123...', // tx hash from wallet signing
+   *   transfer.depositAddress,
+   * );
+   * ```
+   */
+  async submitDeposit(txHash: string, depositAddress: string): Promise<SubmitDepositResponse> {
+    return submitDeposit(this.goBlinkApi, { txHash, depositAddress });
+  }
+
+  /**
+   * Get USD prices for all supported tokens.
+   * Cached server-side for 2 minutes.
+   *
+   * @returns Array of token prices
+   *
+   * @example
+   * ```typescript
+   * const prices = await gb.getTokenPrices();
+   * const usdcPrice = prices.find(p => p.assetId.includes('usdc'));
+   * ```
+   */
+  async getTokenPrices(): Promise<TokenPrice[]> {
+    return getTokenPrices(this.goBlinkApi);
+  }
+
+  /**
+   * Query wallet balances via the goblink.io balance proxy.
+   * Supports EVM, Solana, Sui, and NEAR chains.
+   *
+   * @param query - Balance query options
+   * @returns Balance response with native and optional token balances
+   *
+   * @example
+   * ```typescript
+   * const bal = await gb.getBalances({
+   *   chainType: 'evm',
+   *   chain: 'ethereum',
+   *   address: '0xABC...123',
+   *   includeTokens: true,
+   * });
+   * console.log(bal.native?.balance); // "1.234"
+   * ```
+   */
+  async getBalances(query: BalanceQuery): Promise<BalanceResponse> {
+    return getBalances(this.goBlinkApi, query);
+  }
+
+  /**
+   * Get transaction history for a wallet address.
+   *
+   * @param query - Query options (walletAddress required)
+   * @returns Array of transaction records
+   *
+   * @example
+   * ```typescript
+   * const history = await gb.getTransactionHistory({
+   *   walletAddress: '0xABC...123',
+   *   limit: 20,
+   * });
+   * ```
+   */
+  async getTransactionHistory(query: TransactionHistoryQuery): Promise<Transaction[]> {
+    return getTransactionHistory(this.goBlinkApi, query);
+  }
+
+  /**
+   * Get a single transaction by ID.
+   *
+   * @param transactionId - Transaction ID
+   * @returns Transaction record
+   */
+  async getTransaction(transactionId: string): Promise<Transaction> {
+    return getTransaction(this.goBlinkApi, transactionId);
+  }
+
+  /**
+   * Create a transaction record on goblink.io for history tracking.
+   *
+   * @param request - Transaction details
+   * @returns Created transaction record
+   */
+  async createTransactionRecord(request: CreateTransactionRequest): Promise<Transaction> {
+    return createTransaction(this.goBlinkApi, request);
+  }
+
+  /**
+   * Sync/refresh a transaction's status from on-chain data.
+   *
+   * @param transactionId - Transaction ID to sync
+   * @returns Updated transaction record
+   */
+  async syncTransaction(transactionId: string): Promise<Transaction> {
+    return syncTransaction(this.goBlinkApi, transactionId);
+  }
+
+  /**
+   * Check the status of a payment request (created via shortenPaymentLink).
+   *
+   * @param paymentId - Short payment link ID (e.g., "AbC12xYz")
+   * @returns Payment status including paid_at, tx hashes, payer info
+   *
+   * @example
+   * ```typescript
+   * const status = await gb.getPaymentStatus('AbC12xYz');
+   * if (status.status === 'paid') {
+   *   console.log('Payment received at:', status.paid_at);
+   * }
+   * ```
+   */
+  async getPaymentStatus(paymentId: string): Promise<PaymentStatus> {
+    return getPaymentStatus(this.goBlinkApi, paymentId);
+  }
+
+  /**
+   * Mark a payment as processing — call when the payer signs the deposit transaction.
+   *
+   * @param request - Payment completion details
+   * @returns Confirmation response
+   *
+   * @example
+   * ```typescript
+   * await gb.completePayment({
+   *   paymentId: 'AbC12xYz',
+   *   sendTxHash: '0xabc...',
+   *   depositAddress: '0xdep...',
+   *   payerAddress: '0xpayer...',
+   *   payerChain: 'ethereum',
+   * });
+   * ```
+   */
+  async completePayment(request: CompletePaymentRequest): Promise<PaymentActionResponse> {
+    return completePayment(this.goBlinkApi, request);
+  }
+
+  /**
+   * Finalize a payment outcome — promotes from 'processing' to 'paid' or 'failed'.
+   *
+   * @param request - Finalization details
+   * @returns Confirmation response
+   */
+  async finalizePayment(request: FinalizePaymentRequest): Promise<PaymentActionResponse> {
+    return finalizePayment(this.goBlinkApi, request);
   }
 }
