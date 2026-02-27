@@ -179,6 +179,108 @@ try {
 }
 ```
 
+---
+
+## New in v0.2.0
+
+### Payment Link Generator
+
+Generate shareable payment links and GitHub README badges.
+
+```typescript
+// Create a payment link
+const url = gb.createPaymentLink({
+  recipient: '0xABC...123',
+  chain: 'ethereum',
+  token: 'USDC',
+  amount: '50',           // optional — omit to let payer choose
+  message: 'Invoice #42', // optional
+  redirect: 'https://merchant.com/success', // optional
+});
+// → "https://goblink.io/pay?to=0xABC...123&chain=ethereum&token=USDC&amount=50&..."
+
+// Create a GitHub README badge
+const badge = gb.createBadge({
+  recipient: '0xABC...123',
+  chain: 'ethereum',
+  token: 'USDC',
+  label: 'Donate with goBlink', // optional
+});
+// → "[![Donate with goBlink](https://img.shields.io/badge/...)](https://goblink.io/pay?...)"
+```
+
+### Status Polling Helper
+
+Poll a transfer until it reaches a terminal state.
+
+```typescript
+const finalStatus = await gb.waitForCompletion(transfer.depositAddress, {
+  timeout: 600000,   // 10 min (default)
+  interval: 5000,    // 5s poll interval (default)
+  onStatusChange: (status) => console.log('Status:', status.status),
+});
+// Throws GoBlinkError on timeout
+```
+
+### Webhook URL (Forward Compatibility)
+
+Both `TransferRequest` and `QuoteRequest` now accept an optional `webhookUrl` field.
+This field is reserved for forward compatibility — webhook delivery is a planned feature.
+
+```typescript
+const transfer = await gb.createTransfer({
+  from: { chain: 'ethereum', token: 'USDC' },
+  to: { chain: 'solana', token: 'USDC' },
+  amount: '100',
+  recipient: '7xKp...3mNw',
+  refundAddress: '0xABC...123',
+  webhookUrl: 'https://merchant.com/api/goblink-webhook', // reserved
+});
+```
+
+### Embeddable Widget
+
+Drop a goBlink payment widget into any website with zero config.
+
+#### Vanilla JS (works everywhere)
+
+```html
+<div id="goblink-container"></div>
+<script type="module">
+  import { GoBlinkEmbed } from '@goblink/sdk/widget';
+
+  GoBlinkEmbed.mount('#goblink-container', {
+    recipient: '0xABC...123',
+    recipientChain: 'ethereum',
+    recipientToken: 'USDC',
+    amount: '50',
+    theme: 'dark',
+  });
+</script>
+```
+
+#### React
+
+```tsx
+import { GoBlinkWidget } from '@goblink/sdk/widget/react';
+
+<GoBlinkWidget
+  recipient="0xABC...123"
+  recipientChain="ethereum"
+  recipientToken="USDC"
+  amount="50"
+  theme="dark"
+  onSuccess={(transfer) => console.log('done', transfer)}
+  onError={(error) => console.error(error)}
+  compact={false}
+/>
+```
+
+The widget renders as a lightweight iframe pointing to `goblink.io/widget`.
+No React dependency required for vanilla JS usage. Communication uses `postMessage`.
+
+---
+
 ## License
 
 MIT

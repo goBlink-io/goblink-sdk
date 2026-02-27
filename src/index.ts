@@ -35,3 +35,13 @@ export {
 // Utility functions
 export { validateAddress } from './validation/address.js';
 export { formatUsd, truncateAddress, toAtomicAmount, fromAtomicAmount } from './utils/format.js';
+
+// Link helpers
+export { createPaymentLink, createBadge } from './links/payment-link.js';
+export type { PaymentLinkOptions, BadgeOptions } from './links/types.js';
+
+// Status polling
+export type { WaitForCompletionOptions } from './transfers/wait.js';
+
+// Widget (browser environments — import '@goblink/sdk/widget' for full widget API)
+export type { WidgetOptions, WidgetEvent, GoBlinkWidgetProps } from './widget/types.js';

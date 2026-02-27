@@ -22,6 +22,11 @@ export interface QuoteRequest {
   refundAddress: string;
   /** Slippage tolerance in basis points (default: 100 = 1%) */
   slippage?: number;
+  /**
+   * Webhook URL for quote/transfer status notifications.
+   * Reserved for forward compatibility — delivery is a planned feature.
+   */
+  webhookUrl?: string;
 }
 
 /** Quote response returned to the user */

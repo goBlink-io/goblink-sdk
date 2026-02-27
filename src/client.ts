@@ -7,8 +7,12 @@ import { calculateFee, DEFAULT_FEE_TIERS, DEFAULT_MIN_FEE_BPS } from './quotes/f
 import type { FeeTier } from './quotes/fees.js';
 import { createTransfer } from './transfers/create.js';
 import { getTransferStatus } from './transfers/status.js';
+import { waitForCompletion } from './transfers/wait.js';
+import type { WaitForCompletionOptions } from './transfers/wait.js';
 import { validateAddress } from './validation/address.js';
 import { getAllChains } from './chains/config.js';
+import { createPaymentLink, createBadge } from './links/payment-link.js';
+import type { PaymentLinkOptions, BadgeOptions } from './links/types.js';
 import type { ChainId, ChainConfig } from './chains/types.js';
 import type { Token, TokenFilterOptions } from './tokens/types.js';
 import type { QuoteRequest, QuoteResponse, FeeInfo } from './quotes/types.js';
@@ -159,5 +163,74 @@ export class GoBlink {
    */
   clearCache(): void {
     this.tokenList.clearCache();
+  }
+
+  /**
+   * Generate a shareable goblink.io payment link.
+   *
+   * @param options - Payment link options (recipient, chain, token, optional amount/message/redirect)
+   * @returns Full payment URL string
+   *
+   * @example
+   * ```typescript
+   * const url = gb.createPaymentLink({
+   *   recipient: '0xABC...123',
+   *   chain: 'ethereum',
+   *   token: 'USDC',
+   *   amount: '50',
+   *   message: 'Invoice #42',
+   * });
+   * ```
+   */
+  createPaymentLink(options: PaymentLinkOptions): string {
+    return createPaymentLink(options);
+  }
+
+  /**
+   * Generate a Markdown badge for embedding in a GitHub README.
+   *
+   * @param options - Badge options (recipient, chain, token, optional label/color/amount)
+   * @returns Markdown badge string
+   *
+   * @example
+   * ```typescript
+   * const badge = gb.createBadge({
+   *   recipient: '0xABC...123',
+   *   chain: 'ethereum',
+   *   token: 'USDC',
+   *   label: 'Donate with goBlink',
+   * });
+   * ```
+   */
+  createBadge(options: BadgeOptions): string {
+    return createBadge(options);
+  }
+
+  /**
+   * Poll a transfer until it reaches a terminal state (SUCCESS, FAILED, REFUNDED, EXPIRED).
+   *
+   * @param depositAddress - The deposit address returned from createTransfer
+   * @param options - Polling options (timeout, interval, onStatusChange)
+   * @returns The final transfer status
+   * @throws GoBlinkError on timeout
+   *
+   * @example
+   * ```typescript
+   * const finalStatus = await gb.waitForCompletion(depositAddress, {
+   *   timeout: 600000,
+   *   interval: 5000,
+   *   onStatusChange: (s) => console.log('Status:', s.status),
+   * });
+   * ```
+   */
+  async waitForCompletion(
+    depositAddress: string,
+    options?: WaitForCompletionOptions,
+  ): Promise<TransferStatus> {
+    return waitForCompletion(
+      depositAddress,
+      (addr) => this.getTransferStatus(addr),
+      options,
+    );
   }
 }
