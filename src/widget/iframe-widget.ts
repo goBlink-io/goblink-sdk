@@ -1,6 +1,6 @@
 import type { WidgetOptions, WidgetEvent } from './types.js';
 
-const WIDGET_BASE_URL = 'https://goblink.io/widget';
+const WIDGET_BASE_URL = 'https://goblink.io/embed';
 
 /**
  * IframeWidget — creates and manages a goblink.io widget iframe.
