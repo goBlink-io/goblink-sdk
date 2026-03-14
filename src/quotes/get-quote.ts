@@ -67,8 +67,10 @@ export async function executeQuoteRequest(
   // Convert human amount to atomic
   const atomicAmount = toAtomicAmount(request.amount, fromToken.decimals);
 
-  // Calculate fee — we use a rough USD estimate (for tier selection we use the raw amount)
-  const fee = calculateFee(parseFloat(request.amount), options.feeTiers, options.minFeeBps);
+  // Calculate fee — estimate USD value using token price for tier selection
+  const fromPrice = fromToken.price ?? 1;
+  const estimatedUsd = parseFloat(request.amount) * fromPrice;
+  const fee = calculateFee(estimatedUsd, options.feeTiers, options.minFeeBps);
 
   // Build deadline (15 minutes from now)
   const deadline = new Date(Date.now() + 15 * 60 * 1000).toISOString();

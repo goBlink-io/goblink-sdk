@@ -40,7 +40,7 @@ export function calculateFee(
   let bps = tiers[tiers.length - 1]?.bps ?? minFeeBps;
 
   for (const tier of tiers) {
-    if (tier.maxAmountUsd === null || amountUsd < tier.maxAmountUsd) {
+    if (tier.maxAmountUsd === null || amountUsd <= tier.maxAmountUsd) {
       bps = tier.bps;
       break;
     }

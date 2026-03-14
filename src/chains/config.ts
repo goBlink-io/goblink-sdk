@@ -229,6 +229,14 @@ const chains: Record<ChainId, ChainConfig> = {
     explorerTxPath: '/transaction/{hash}',
     nativeToken: 'ALEO',
   },
+  zcash: {
+    id: 'zcash',
+    name: 'Zcash',
+    type: 'utxo',
+    explorer: 'https://blockchair.com/zcash',
+    explorerTxPath: '/transaction/{hash}',
+    nativeToken: 'ZEC',
+  },
 };
 
 /** Get configuration for a specific chain */

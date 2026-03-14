@@ -26,7 +26,8 @@ export type ChainId =
   | 'starknet'
   | 'cardano'
   | 'aptos'
-  | 'aleo';
+  | 'aleo'
+  | 'zcash';
 
 /** Chain network type */
 export type ChainType = 'evm' | 'utxo' | 'account' | 'move';

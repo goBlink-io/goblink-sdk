@@ -16,6 +16,12 @@ const ADDRESS_PATTERNS: Partial<Record<ChainId, RegExp[]>> = {
   aurora: [/^0x[a-fA-F0-9]{40}$/],
   xlayer: [/^0x[a-fA-F0-9]{40}$/],
 
+  // UTXO chains
+  litecoin: [/^(ltc1|[LM3])[a-zA-HJ-NP-Z0-9]{25,62}$/],
+  dogecoin: [/^D[1-9A-HJ-NP-Za-km-z]{25,34}$/],
+  bitcoincash: [/^(bitcoincash:)?[qp][a-z0-9]{41}$/, /^[13][a-zA-HJ-NP-Z0-9]{25,34}$/],
+  zcash: [/^(t1|t3)[a-zA-HJ-NP-Z0-9]{33}$/, /^zs[a-z0-9]{76}$/],
+
   // Non-EVM chains
   solana: [/^[1-9A-HJ-NP-Za-km-z]{32,44}$/],
   sui: [/^0x[a-fA-F0-9]{64}$/],

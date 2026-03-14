@@ -39,8 +39,8 @@ export function createBadge(options: BadgeOptions): string {
     amount: options.amount,
   });
 
-  // Shields.io format: label-message-color (encode hyphens in values)
-  const shieldLabel = encodeURIComponent(label);
+  // Shields.io format: label-message-color (hyphens must be doubled to escape)
+  const shieldLabel = encodeURIComponent(label.replace(/-/g, '--'));
   const shieldMessage = 'goBlink';
   const imgUrl = `${SHIELDS_URL}/${shieldLabel}-${shieldMessage}-${color}`;
 

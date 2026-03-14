@@ -37,7 +37,7 @@ export { validateAddress } from './validation/address.js';
 export { formatUsd, truncateAddress, toAtomicAmount, fromAtomicAmount } from './utils/format.js';
 
 // Link helpers
-export { createPaymentLink, createBadge } from './links/payment-link.js';
+export { createPaymentLink, createBadge, shortenPaymentLink } from './links/payment-link.js';
 export type { PaymentLinkOptions, BadgeOptions, ShortenOptions, ShortenResponse } from './links/types.js';
 
 // Status polling

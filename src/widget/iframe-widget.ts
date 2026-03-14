@@ -68,8 +68,11 @@ export class IframeWidget {
     this.iframe.allow = 'clipboard-write';
     this.iframe.title = 'goBlink Payment Widget';
 
+    const expectedOrigin = new URL(WIDGET_BASE_URL).origin;
     this.messageHandler = (event: MessageEvent) => {
       if (!event.data || typeof event.data.type !== 'string') return;
+      // Verify origin to prevent cross-origin spoofing
+      if (event.origin !== expectedOrigin) return;
       // Only handle events from the widget iframe
       if (this.iframe && event.source !== this.iframe.contentWindow) return;
       this.handleMessage(event.data as WidgetEvent);
