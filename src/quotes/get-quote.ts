@@ -8,6 +8,28 @@ import type { FeeTier } from './fees.js';
 import { toAtomicAmount, fromAtomicAmount } from '../utils/format.js';
 import { GoBlinkAssetNotFoundError, GoBlinkValidationError } from '../errors.js';
 
+/**
+ * Return a valid-looking placeholder address for a chain (used in dry quote requests
+ * where the 1Click API requires recipient/refundTo but the caller hasn't provided them).
+ */
+function getDryPlaceholderAddress(chain: string): string {
+  const c = chain.toLowerCase();
+  // Sui — 0x-prefixed 64-char hex
+  if (c === 'sui') return '0x' + '0'.repeat(64);
+  // NEAR — named account
+  if (c === 'near') return 'placeholder.near';
+  // Solana — base58, 44 chars
+  if (c === 'solana') return '11111111111111111111111111111111';
+  // Bitcoin — P2PKH
+  if (c === 'bitcoin') return '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa';
+  // TON — EQ format
+  if (c === 'ton') return 'EQD__________________________________________0';
+  // Aptos — 0x-prefixed 64-char hex
+  if (c === 'aptos') return '0x' + '0'.repeat(64);
+  // EVM chains (ethereum, base, arbitrum, polygon, etc.) — 0x-prefixed 40-char hex
+  return '0x' + '0'.repeat(40);
+}
+
 export interface GetQuoteOptions {
   feeRecipient: string;
   feeTiers: FeeTier[];
@@ -75,13 +97,17 @@ export async function executeQuoteRequest(
   // Build deadline (15 minutes from now)
   const deadline = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
+    // 1Click API requires recipient/refundTo even for dry quotes.
+  // Use chain-appropriate placeholder addresses when not provided.
+  const dryRecipient = request.recipient || getDryPlaceholderAddress(request.to.chain);
+  const dryRefund = request.refundAddress || getDryPlaceholderAddress(request.from.chain);
   const protocolRequest: ProtocolQuoteRequest = {
     dry,
     originAsset: fromProtocol,
     destinationAsset: toProtocol,
     amount: atomicAmount,
-    recipient: request.recipient,
-    refundTo: request.refundAddress,
+    recipient: dryRecipient,
+    refundTo: dryRefund,
     swapType: 'EXACT_INPUT',
     slippageTolerance: request.slippage ?? 100,
     deadline,

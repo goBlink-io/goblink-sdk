@@ -481,6 +481,16 @@ function formatUsd(amount) {
 }
 
 // src/quotes/get-quote.ts
+function getDryPlaceholderAddress(chain) {
+  const c = chain.toLowerCase();
+  if (c === "sui") return "0x" + "0".repeat(64);
+  if (c === "near") return "placeholder.near";
+  if (c === "solana") return "11111111111111111111111111111111";
+  if (c === "bitcoin") return "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa";
+  if (c === "ton") return "EQD__________________________________________0";
+  if (c === "aptos") return "0x" + "0".repeat(64);
+  return "0x" + "0".repeat(40);
+}
 async function getQuote(request, apiClient, mapper, options) {
   return executeQuoteRequest(request, true, apiClient, mapper, options);
 }
@@ -511,13 +521,15 @@ async function executeQuoteRequest(request, dry, apiClient, mapper, options) {
   const estimatedUsd = parseFloat(request.amount) * fromPrice;
   const fee = calculateFee(estimatedUsd, options.feeTiers, options.minFeeBps);
   const deadline = new Date(Date.now() + 15 * 60 * 1e3).toISOString();
+  const dryRecipient = request.recipient || getDryPlaceholderAddress(request.to.chain);
+  const dryRefund = request.refundAddress || getDryPlaceholderAddress(request.from.chain);
   const protocolRequest = {
     dry,
     originAsset: fromProtocol,
     destinationAsset: toProtocol,
     amount: atomicAmount,
-    recipient: request.recipient,
-    refundTo: request.refundAddress,
+    recipient: dryRecipient,
+    refundTo: dryRefund,
     swapType: "EXACT_INPUT",
     slippageTolerance: request.slippage ?? 100,
     deadline,
